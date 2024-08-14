@@ -1,0 +1,34 @@
+[package]
+name = "h3tunnel"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tokio = { version = "1.38.0", features = ["full"] }
+s2n-quic = "1"
+bytes = "1.5.0"
+anyhow = "1.0.81"
+clap = { version = "4", features = ["derive"] }
+url = "2"
+log = { version = "0.4", features = ["std"] }
+env_logger = "0.9"
+socket2 = "0.5.6"
+udp-stream = "0.0.11"
+
+[[bin]]
+name = "h3tunnel_server"
+path = "src/server.rs"
+
+[[bin]]
+name = "h3tunnel_client"
+path = "src/client.rs"
+
+[profile.release]
+lto = "fat"
+panic = "abort"
+codegen-units = 1
+opt-level = 3
+debug = 0
+strip = "symbols"
