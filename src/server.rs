@@ -6,6 +6,7 @@ use s2n_quic::Server;
 use std::{net::SocketAddr, path::PathBuf};
 use udp_stream::UdpStream;
 mod common;
+use s2n_quic::provider::tls::rustls;
 
 /// Wireguard over QUIC server
 #[derive(Parser, Debug)]
@@ -50,8 +51,14 @@ async fn main() -> Result<()> {
 
     let congestion_controller = s2n_quic::provider::congestion_controller::Bbr::default();
 
+    let tls = rustls::Server::builder()
+        .with_certificate(cert_content.as_str(), key_content.as_str())
+        .unwrap()
+        .build()
+        .unwrap();
+
     let mut server = Server::builder()
-        .with_tls((cert_content.as_str(), key_content.as_str()))
+        .with_tls(tls)
         .unwrap()
         .with_io(io)
         .unwrap()
