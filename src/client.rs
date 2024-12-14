@@ -68,7 +68,11 @@ async fn main() -> Result<()> {
         Some(cert_path) => {
             std::fs::read_to_string(cert_path.to_str().unwrap().to_string()).unwrap()
         }
-        _ => include_str!("../certs/cert.pem").to_string(),
+        _ => include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/certs/client-cert.pem"
+        ))
+        .to_string(),
     };
 
     let limits = s2n_quic::provider::limits::Limits::new()

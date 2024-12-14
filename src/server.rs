@@ -35,8 +35,12 @@ async fn main() -> Result<()> {
             std::fs::read_to_string(cert_path.to_str().unwrap().to_string()).unwrap(),
         ),
         _ => (
-            include_str!("../certs/cert.key.pem").to_string(),
-            include_str!("../certs/cert.pem").to_string(),
+            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/certs/server-key.pem")).to_string(),
+            include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/certs/server-cert.pem"
+            ))
+            .to_string(),
         ),
     };
 
