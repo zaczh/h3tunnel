@@ -18,7 +18,7 @@ struct Opt {
     #[clap(short = 'c', long = "cert", requires = "key")]
     cert: Option<PathBuf>,
     /// Address to listen on
-    #[clap(short = 'l', long = "listen", default_value = "[::1]:443")]
+    #[clap(short = 'l', long = "listen", default_value = "0.0.0.0:443")]
     listen: String,
     /// Forwarding target
     #[clap(short = 'f', long = "forward-to")]
