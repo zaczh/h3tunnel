@@ -47,14 +47,14 @@ async fn main() -> Result<()> {
         Some(ref cert_path) => {
             std::fs::read_to_string(cert_path.to_str().unwrap().to_string()).unwrap()
         }
-        _ => panic!("Client cert not specified"),
+        _ => panic!("Server cert not specified"),
     };
 
     let server_key_content = match options.key {
         Some(ref key_path) => {
             std::fs::read_to_string(key_path.to_str().unwrap().to_string()).unwrap()
         }
-        _ => panic!("Client cert not specified"),
+        _ => panic!("Server cert not specified"),
     };
 
     let listen_address = options.listen;
