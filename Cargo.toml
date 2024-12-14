@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 tokio = { version = "1.38.0", features = ["full"] }
-s2n-quic = "1"
+s2n-quic = { version = "1", features = ["provider-tls-rustls"] }
 bytes = "1.5.0"
 anyhow = "1.0.81"
 clap = { version = "4", features = ["derive"] }

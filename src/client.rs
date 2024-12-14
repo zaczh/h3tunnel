@@ -11,6 +11,7 @@ use tokio::time::Duration;
 use udp_stream::UdpStream;
 use url::Url;
 mod common;
+use s2n_quic::provider::tls::rustls;
 
 static IDEL_TIMEOUT: Duration = Duration::from_secs(30);
 
@@ -25,9 +26,9 @@ struct Opt {
     #[clap(long = "host")]
     host: Option<String>,
 
-    /// Client certificate
-    #[clap(long = "cert")]
-    cert: Option<PathBuf>,
+    /// CA Cert
+    #[clap(long = "ca")]
+    ca: Option<PathBuf>,
 
     /// Local listen address and port, example: `--listen 0.0.0.0:3242`
     #[clap(short = 'l', long = "listen")]
@@ -64,7 +65,7 @@ async fn main() -> Result<()> {
 
     trace!("remote: {remote}, host: {url_host}");
 
-    let cert_content = match options.cert {
+    let cert_content = match options.ca {
         Some(cert_path) => {
             std::fs::read_to_string(cert_path.to_str().unwrap().to_string()).unwrap()
         }
@@ -87,8 +88,14 @@ async fn main() -> Result<()> {
         .build()
         .unwrap();
 
+    let tls = rustls::Client::builder()
+        .with_certificate(cert_content.as_str())
+        .unwrap()
+        .build()
+        .unwrap();
+
     let client = Client::builder()
-        .with_tls(cert_content.as_str())
+        .with_tls(tls)
         .unwrap()
         .with_io(io)
         .unwrap()
