@@ -2,7 +2,6 @@ use anyhow::{anyhow, Result};
 use clap::Parser;
 use log::{error, info, trace, warn};
 use s2n_quic::stream::BidirectionalStream;
-use s2n_quic::{client::Connect, Client};
 use std::net::SocketAddr;
 use std::str::FromStr;
 use std::{net::ToSocketAddrs, path::PathBuf, sync::Arc};
@@ -11,7 +10,7 @@ use tokio::time::Duration;
 use udp_stream::UdpStream;
 use url::Url;
 mod common;
-use s2n_quic::provider::tls::rustls;
+use s2n_quic::{client::Connect, provider::tls, Client};
 
 static IDEL_TIMEOUT: Duration = Duration::from_secs(30);
 
@@ -29,6 +28,14 @@ struct Opt {
     /// CA Cert
     #[clap(long = "ca")]
     ca: Option<PathBuf>,
+
+    /// Client Cert
+    #[clap(long = "cert")]
+    cert: Option<PathBuf>,
+
+    /// Client Key
+    #[clap(long = "key")]
+    key: Option<PathBuf>,
 
     /// Local listen address and port, example: `--listen 0.0.0.0:3242`
     #[clap(short = 'l', long = "listen")]
@@ -65,9 +72,23 @@ async fn main() -> Result<()> {
 
     trace!("remote: {remote}, host: {url_host}");
 
-    let cert_content = match options.ca {
-        Some(cert_path) => {
+    let ca_cert_content = match options.ca {
+        Some(ref ca_cert_path) => {
+            std::fs::read_to_string(ca_cert_path.to_str().unwrap().to_string()).unwrap()
+        }
+        _ => panic!("CA cert not specified"),
+    };
+
+    let client_cert_content = match options.cert {
+        Some(ref cert_path) => {
             std::fs::read_to_string(cert_path.to_str().unwrap().to_string()).unwrap()
+        }
+        _ => panic!("Client cert not specified"),
+    };
+
+    let client_key_content = match options.key {
+        Some(ref key_path) => {
+            std::fs::read_to_string(key_path.to_str().unwrap().to_string()).unwrap()
         }
         _ => panic!("Client cert not specified"),
     };
@@ -88,11 +109,10 @@ async fn main() -> Result<()> {
         .build()
         .unwrap();
 
-    let tls = rustls::Client::builder()
-        .with_certificate(cert_content.as_str())
-        .unwrap()
-        .build()
-        .unwrap();
+    let tls = tls::default::Client::builder()
+        .with_certificate(ca_cert_content)?
+        .with_client_identity(client_cert_content, client_key_content)?
+        .build()?;
 
     let client = Client::builder()
         .with_tls(tls)

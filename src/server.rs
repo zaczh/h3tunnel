@@ -2,22 +2,27 @@ use anyhow::Result;
 use clap::Parser;
 use log::trace;
 use s2n_quic::stream::BidirectionalStream;
-use s2n_quic::Server;
 use std::{net::SocketAddr, path::PathBuf};
 use udp_stream::UdpStream;
 mod common;
-use s2n_quic::provider::tls::rustls;
+use s2n_quic::{provider::tls, Server};
 
 /// Wireguard over QUIC server
 #[derive(Parser, Debug)]
 #[clap(name = "server")]
 struct Opt {
-    /// TLS private key in PEM format
-    #[clap(short = 'k', long = "key", requires = "cert")]
-    key: Option<PathBuf>,
-    /// TLS certificate in PEM format
-    #[clap(short = 'c', long = "cert", requires = "key")]
+    /// CA Cert
+    #[clap(long = "ca")]
+    ca: Option<PathBuf>,
+
+    /// Client Cert
+    #[clap(long = "cert")]
     cert: Option<PathBuf>,
+
+    /// Client Key
+    #[clap(long = "key")]
+    key: Option<PathBuf>,
+
     /// Address to listen on
     #[clap(short = 'l', long = "listen", default_value = "0.0.0.0:443")]
     listen: String,
@@ -30,12 +35,26 @@ struct Opt {
 async fn main() -> Result<()> {
     env_logger::init();
     let options = Opt::parse();
-    let (key_content, cert_content) = match (options.key, options.cert) {
-        (Some(key_path), Some(cert_path)) => (
-            std::fs::read_to_string(key_path.to_str().unwrap().to_string()).unwrap(),
-            std::fs::read_to_string(cert_path.to_str().unwrap().to_string()).unwrap(),
-        ),
-        _ => panic!("Server cert not specified"),
+
+    let ca_cert_content = match options.ca {
+        Some(ref ca_cert_path) => {
+            std::fs::read_to_string(ca_cert_path.to_str().unwrap().to_string()).unwrap()
+        }
+        _ => panic!("CA cert not specified"),
+    };
+
+    let server_cert_content = match options.cert {
+        Some(ref cert_path) => {
+            std::fs::read_to_string(cert_path.to_str().unwrap().to_string()).unwrap()
+        }
+        _ => panic!("Client cert not specified"),
+    };
+
+    let server_key_content = match options.key {
+        Some(ref key_path) => {
+            std::fs::read_to_string(key_path.to_str().unwrap().to_string()).unwrap()
+        }
+        _ => panic!("Client cert not specified"),
     };
 
     let listen_address = options.listen;
@@ -51,11 +70,11 @@ async fn main() -> Result<()> {
 
     let congestion_controller = s2n_quic::provider::congestion_controller::Bbr::default();
 
-    let tls = rustls::Server::builder()
-        .with_certificate(cert_content.as_str(), key_content.as_str())
-        .unwrap()
-        .build()
-        .unwrap();
+    let tls = tls::default::Server::builder()
+        .with_trusted_certificate(ca_cert_content)?
+        .with_certificate(server_cert_content, server_key_content)?
+        .with_client_authentication()?
+        .build()?;
 
     let mut server = Server::builder()
         .with_tls(tls)
