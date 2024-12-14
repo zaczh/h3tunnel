@@ -25,9 +25,9 @@ struct Opt {
     #[clap(long = "host")]
     host: Option<String>,
 
-    /// Custom certificate authority to trust, in DER format
-    #[clap(long = "ca")]
-    ca: Option<PathBuf>,
+    /// Client certificate
+    #[clap(long = "cert")]
+    cert: Option<PathBuf>,
 
     /// Local listen address and port, example: `--listen 0.0.0.0:3242`
     #[clap(short = 'l', long = "listen")]
@@ -64,15 +64,11 @@ async fn main() -> Result<()> {
 
     trace!("remote: {remote}, host: {url_host}");
 
-    let cert_content = match options.ca {
+    let cert_content = match options.cert {
         Some(cert_path) => {
             std::fs::read_to_string(cert_path.to_str().unwrap().to_string()).unwrap()
         }
-        _ => include_str!(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/certs/client-cert.pem"
-        ))
-        .to_string(),
+        _ => panic!("Client cert not specified"),
     };
 
     let limits = s2n_quic::provider::limits::Limits::new()

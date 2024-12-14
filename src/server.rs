@@ -34,14 +34,7 @@ async fn main() -> Result<()> {
             std::fs::read_to_string(key_path.to_str().unwrap().to_string()).unwrap(),
             std::fs::read_to_string(cert_path.to_str().unwrap().to_string()).unwrap(),
         ),
-        _ => (
-            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/certs/server-key.pem")).to_string(),
-            include_str!(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/certs/server-cert.pem"
-            ))
-            .to_string(),
-        ),
+        _ => panic!("Server cert not specified"),
     };
 
     let listen_address = options.listen;
