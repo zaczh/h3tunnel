@@ -155,7 +155,6 @@ async fn main() -> Result<()> {
         let sock = create_reused_udp_socket(local);
         trace!("socket created");
         sock.connect(src).await.unwrap();
-        connection.keep_alive(true)?;
         trace!("socket connected");
         let udp_stream = UdpStream::from_tokio(sock).await.unwrap();
         let mut connection_handle = connection_handle.clone();
